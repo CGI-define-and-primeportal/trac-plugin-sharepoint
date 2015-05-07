@@ -1,0 +1,57 @@
+- hosts: all
+  sudo: true
+  tasks:
+    - apt: name={{item}} state=present
+      with_items:
+        - trac
+        - subversion
+        - libapache2-mod-python
+        - libapache2-svn
+        - python-pip
+    - name: create self-signed SSL cert
+      command: openssl req -new -nodes -x509 -subj "/C=XX/ST=XX/L=XXX/O=vagrant/CN=localhost" -days 3650 -keyout /etc/ssl/private/vagrant.key -out /etc/ssl/certs/vagrant.pem creates=/etc/ssl/certs/vagrant.key
+    - command: svnadmin create /var/local/svn creates=/var/local/svn
+    - file: path=/var/local/trac state=directory
+    - command: trac-admin /var/local/trac initenv project sqlite:db/trac.db svn /var/local/svn creates=/var/local/trac/VERSION
+      register: initenv
+    - command: htpasswd -bc /var/local/trac/.htpasswd admin admin creates=/var/local/trac/.htpasswd
+    - command: trac-admin /var/local/trac permission add admin TRAC_ADMIN
+      when: initenv | changed
+    - command: trac-admin /var/local/trac config set logging log_type file
+      when: initenv | changed
+    - file: path=/var/local/trac owner=www-data mode=0775 recurse=yes
+      when: initenv | changed
+    - file: path={{item}} state=absent
+      with_items:
+        - /etc/apache2/sites-enabled/000-default
+        - /etc/apache2/sites-available/default-ssl
+      notify: restart apache2
+    - copy: src=apache-trac.conf dest=/etc/apache2/sites-available/trac.conf
+      notify: restart apache2      
+    - command: a2ensite trac.conf creates=/etc/apache2/sites-enabled/trac.conf
+      notify: restart apache2
+    - command: a2enmod ssl creates=/etc/apache2/mods-enabled/ssl.conf
+      notify: restart apache2
+    - command: svn checkout file:///var/local/svn /tmp/svn-checkout creates=/tmp/svn-checkout
+    - copy: src=sample_document.docx dest=/tmp/svn-checkout/
+      register: sample_document
+    - command: svn add /tmp/svn-checkout/sample_document.docx
+      when: sample_document | changed
+    - command: svn ci -m "store document" /tmp/svn-checkout/
+      when: sample_document | changed
+    - command: pip install svn+http://trac-hacks.org/svn/contextmenuplugin/0.12/ creates=/usr/local/lib/python2.7/dist-packages/contextmenu/
+      register: contextmenuplugin
+      notify: restart apache2
+    - command: trac-admin /var/local/trac config set components contextmenu.* enabled
+      sudo_user: www-data
+      when: contextmenuplugin | changed
+    - command: python setup.py develop chdir=/vagrant creates=/usr/local/lib/python2.7/dist-packages/TracSharePointInteroperability.egg-link
+      register: tracsharepoint
+      notify: restart apache2      
+    - command: trac-admin /var/local/trac config set components tracsharepoint.* enabled
+      sudo_user: www-data      
+      when: tracsharepoint | changed
+      
+  handlers:
+      - name: restart apache2
+        service: name=apache2 state=reloaded enabled=yes

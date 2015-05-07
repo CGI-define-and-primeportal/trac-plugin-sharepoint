@@ -10,6 +10,10 @@ Microsoft published documentation on SharePoint interoperability is
 hosted at
 https://msdn.microsoft.com/en-us/library/office/cc339475%28v=office.12%29.aspx
 
+## Development environment
+
+Run 'vagrant up', then visit https://localhost:10443/trac
+
 ## Contact information
 
 To reach CGI with regards to this plugin, please contact coreteam.service.desk.se@cgi.com
