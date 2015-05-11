@@ -14,6 +14,12 @@ https://msdn.microsoft.com/en-us/library/office/cc339475%28v=office.12%29.aspx
 
 Run 'vagrant up', then visit https://localhost:10443/trac
 
+To see logs:
+
+'vagrant ssh'
+
+'tail /var/local/trac'
+
 ## Contact information
 
 To reach CGI with regards to this plugin, please contact coreteam.service.desk.se@cgi.com
