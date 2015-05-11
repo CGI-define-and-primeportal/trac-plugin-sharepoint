@@ -18,7 +18,7 @@ To see logs:
 
 'vagrant ssh'
 
-'tail /var/local/trac'
+'tail /var/local/trac/log/trac.log'
 
 ## Contact information
 
