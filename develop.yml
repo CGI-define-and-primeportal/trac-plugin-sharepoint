@@ -9,6 +9,7 @@
         - libapache2-svn
         - python-pip
         - git
+        - emacs23-nox
     - name: create self-signed SSL cert
       command: openssl req -new -nodes -x509 -subj "/C=XX/ST=XX/L=XXX/O=vagrant/CN=localhost" -days 3650 -keyout /etc/ssl/private/vagrant.key -out /etc/ssl/certs/vagrant.pem creates=/etc/ssl/certs/vagrant.key
     - command: svnadmin create /var/local/svn creates=/var/local/svn
