@@ -7,9 +7,10 @@
         - subversion
         - libapache2-mod-python
         - libapache2-svn
+        - apache2-utils
         - python-pip
         - git
-        - emacs-nox
+        - emacs23-nox
     - name: create self-signed SSL cert
       command: openssl req -new -nodes -x509 -subj "/C=XX/ST=XX/L=XXX/O=vagrant/CN=localhost" -days 3650 -keyout /etc/ssl/private/vagrant.key -out /etc/ssl/certs/vagrant.pem creates=/etc/ssl/certs/vagrant.key
     - command: svnadmin create /var/local/svn creates=/var/local/svn
@@ -23,13 +24,16 @@
       when: initenv | changed
     - file: path=/var/local/trac owner=www-data mode=0775 recurse=yes
       when: initenv | changed
+    # FIXME as of 2.4.2-1 looks like 'sites' isn't used
     - file: path={{item}} state=absent
       with_items:
         - /etc/apache2/sites-enabled/000-default
         - /etc/apache2/sites-available/default-ssl
       notify: restart apache2
+    # FIXME as of 2.4.2-1 looks like 'sites' isn't used      
     - copy: src=apache-trac.conf dest=/etc/apache2/sites-available/trac.conf
-      notify: restart apache2      
+      notify: restart apache2
+    # FIXME as of 2.4.2-1 looks like 'sites' isn't used      
     - command: a2ensite trac.conf creates=/etc/apache2/sites-enabled/trac.conf
       notify: restart apache2
     - command: a2enmod ssl creates=/etc/apache2/mods-enabled/ssl.conf
