@@ -8,6 +8,7 @@
         - libapache2-mod-python
         - libapache2-svn
         - python-pip
+        - git
     - name: create self-signed SSL cert
       command: openssl req -new -nodes -x509 -subj "/C=XX/ST=XX/L=XXX/O=vagrant/CN=localhost" -days 3650 -keyout /etc/ssl/private/vagrant.key -out /etc/ssl/certs/vagrant.pem creates=/etc/ssl/certs/vagrant.key
     - command: svnadmin create /var/local/svn creates=/var/local/svn
@@ -39,7 +40,7 @@
       when: sample_document | changed
     - command: svn ci -m "store document" /tmp/svn-checkout/
       when: sample_document | changed
-    - command: pip install svn+http://trac-hacks.org/svn/contextmenuplugin/0.12/ creates=/usr/local/lib/python2.7/dist-packages/contextmenu/
+    - command: pip install git+https://github.com/CGI-define-and-primeportal/trac-plugin-contextmenuplugin.git creates=/usr/local/lib/python2.7/dist-packages/contextmenu/
       register: contextmenuplugin
       notify: restart apache2
     - command: trac-admin /var/local/trac config set components contextmenu.* enabled
