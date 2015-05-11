@@ -47,6 +47,9 @@
     - command: trac-admin /var/local/trac config set components contextmenu.* enabled
       sudo_user: www-data
       when: contextmenuplugin | changed
+    - command: trac-admin /var/local/trac config set svn repository_url https://localhost:10443/svn/
+      sudo_user: www-data
+      when: contextmenuplugin | changed
     - command: python setup.py develop chdir=/vagrant creates=/usr/local/lib/python2.7/dist-packages/TracSharePointInteroperability.egg-link
       register: tracsharepoint
       notify: restart apache2      
