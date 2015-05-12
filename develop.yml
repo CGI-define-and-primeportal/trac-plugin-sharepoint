@@ -22,8 +22,12 @@
       register: openssl
     - command: cp -a /etc/ssl/certs/vagrant.pem /vagrant/vagrant.pem
       when: openssl | changed
-    - command: svnadmin create /var/local/svn creates=/var/local/svn
-    - file: path=/var/local/trac state=directory owner=www-data
+    - file: path={{item}} state=directory owner=www-data
+      with_items:
+        - /var/local/trac
+        - /var/local/svn
+    - command: svnadmin create /var/local/svn creates=/var/local/svn/format
+      sudo_user: www-data      
     - command: trac-admin /var/local/trac initenv project sqlite:db/trac.db svn /var/local/svn creates=/var/local/trac/VERSION
       sudo_user: www-data
       register: initenv
@@ -44,6 +48,7 @@
     - file: path={{item}} state=absent
       with_items:
         - /etc/apache2/sites-enabled/000-default.conf
+        - /etc/apache2/sites-available/000-default.conf
         - /etc/apache2/sites-available/default-ssl.conf
       notify: restart apache2
     - copy: src=apache-trac.conf dest=/etc/apache2/sites-available/trac.conf
@@ -51,6 +56,8 @@
     - command: a2ensite trac.conf creates=/etc/apache2/sites-enabled/trac.conf
       notify: restart apache2
     - command: a2enmod ssl creates=/etc/apache2/mods-enabled/ssl.conf
+      notify: restart apache2
+    - command: a2enmod dump_io creates=/etc/apache2/mods-enabled/dump_io.conf
       notify: restart apache2
     - command: svn checkout file:///var/local/svn /tmp/svn-checkout creates=/tmp/svn-checkout
     - copy: src=sample_document.docx dest=/tmp/svn-checkout/

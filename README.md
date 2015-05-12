@@ -16,9 +16,16 @@ Run 'vagrant up', then visit https://localhost:10443/trac
 
 To see logs:
 
-'vagrant ssh'
+`vagrant ssh -c "tail -f /var/local/trac/log/*"`
 
-'tail /var/local/trac/log/trac.log'
+To set the URL to SVN, in case your vagrant host is not the machine
+with Microsoft Office:
+
+`vagrant ssh -c "sudo -u www-data trac-admin /var/local/trac config set svn repository_url https://server:10443/svn/"`
+
+To list SVN locks:
+
+`vagrant ssh -c "sudo -u www-data svnadmin lslocks /var/local/svn/"`
 
 ## Contact information
 
