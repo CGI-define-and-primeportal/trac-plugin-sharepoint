@@ -5,35 +5,49 @@
       with_items:
         - trac
         - subversion
-        - libapache2-mod-python
+        - apache2
+        - libapache2-mod-wsgi
         - libapache2-svn
         - apache2-utils
         - python-pip
         - git
         - emacs23-nox
+    # http://trac.edgewall.org/ticket/11345
+    - apt: name={{item}} state=absent
+      with_items:
+        - python-babel
+        - python-babel-localedata
     - name: create self-signed SSL cert
       command: openssl req -new -nodes -x509 -subj "/C=XX/ST=XX/L=XXX/O=vagrant/CN=localhost" -days 3650 -keyout /etc/ssl/private/vagrant.key -out /etc/ssl/certs/vagrant.pem creates=/etc/ssl/certs/vagrant.key
+      register: openssl
+    - command: cp -a /etc/ssl/certs/vagrant.pem /vagrant/vagrant.pem
+      when: openssl | changed
     - command: svnadmin create /var/local/svn creates=/var/local/svn
-    - file: path=/var/local/trac state=directory
+    - file: path=/var/local/trac state=directory owner=www-data
     - command: trac-admin /var/local/trac initenv project sqlite:db/trac.db svn /var/local/svn creates=/var/local/trac/VERSION
+      sudo_user: www-data
       register: initenv
     - command: htpasswd -bc /var/local/trac/.htpasswd admin admin creates=/var/local/trac/.htpasswd
     - command: trac-admin /var/local/trac permission add admin TRAC_ADMIN
+      sudo_user: www-data
       when: initenv | changed
     - command: trac-admin /var/local/trac config set logging log_type file
+      sudo_user: www-data
       when: initenv | changed
-    - file: path=/var/local/trac owner=www-data mode=0775 recurse=yes
+    - copy: src=trac.wsgi dest=/var/local/trac/trac.wsgi
+      notify: restart apache2
       when: initenv | changed
-    # FIXME as of 2.4.2-1 looks like 'sites' isn't used
+    - command: trac-admin /var/local/trac config set components tracopt.versioncontrol.svn.* enabled
+      sudo_user: www-data
+      notify: restart apache2
+      when: initenv | changed
     - file: path={{item}} state=absent
       with_items:
-        - /etc/apache2/sites-enabled/000-default
-        - /etc/apache2/sites-available/default-ssl
+        - /etc/apache2/sites-enabled/000-default.conf
+        - /etc/apache2/sites-available/default-ssl.conf
       notify: restart apache2
-    # FIXME as of 2.4.2-1 looks like 'sites' isn't used      
     - copy: src=apache-trac.conf dest=/etc/apache2/sites-available/trac.conf
       notify: restart apache2
-    # FIXME as of 2.4.2-1 looks like 'sites' isn't used      
     - command: a2ensite trac.conf creates=/etc/apache2/sites-enabled/trac.conf
       notify: restart apache2
     - command: a2enmod ssl creates=/etc/apache2/mods-enabled/ssl.conf
@@ -56,9 +70,9 @@
       when: contextmenuplugin | changed
     - command: python setup.py develop chdir=/vagrant creates=/usr/local/lib/python2.7/dist-packages/TracSharePointInteroperability.egg-link
       register: tracsharepoint
-      notify: restart apache2      
+      notify: restart apache2
     - command: trac-admin /var/local/trac config set components tracsharepoint.* enabled
-      sudo_user: www-data      
+      sudo_user: www-data
       when: tracsharepoint | changed
       
   handlers:
