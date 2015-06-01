@@ -46,6 +46,9 @@ class BrowserLaunchOffice(SubversionLink):
         # support.
         if not is_subversion_repository(data.get('repos')):
             return None
+        # don't show up in the menu if the user is browsing a non-HEAD revision
+        if data.get('stickyrev'):
+            return None
 
         reponame = data['reponame'] or ''
         ext = os.path.splitext(entry.name)[1][1:]
