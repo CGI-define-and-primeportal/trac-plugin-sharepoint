@@ -11,7 +11,7 @@ from pkg_resources import resource_filename
 import os
 import re
 
-class BrowserLaunchOffice(SubversionLink):
+class BrowserLaunchOfficeForEdit(SubversionLink):
     implements(ISourceBrowserContextMenuProvider, ITemplateStreamFilter, ITemplateProvider)
 
     office_file_extensions = {}
@@ -19,6 +19,12 @@ class BrowserLaunchOffice(SubversionLink):
     office_file_extensions.update(dict((key, 'excel') for key in "xls xlt xlm xlsx xlsm xltx xltm xlsb xla xlam xll xlw".split()))
     office_file_extensions.update(dict((key, 'powerpoint') for key in "ppt pot pps pptx pptm potx potm ppam ppsx ppsm sldx sldm".split()))
 
+    _link_class = "officelaunchlink-edit"
+    _verb = "Edit"
+    # https://msdn.microsoft.com/en-us/library/office/dn906146.aspx    
+    _href_mode = "ofe"
+    
+    
     # ITemplateProvider methods
     def get_htdocs_dirs(self):
         return [('tracsharepoint', resource_filename(__name__, 'htdocs'))]
@@ -38,7 +44,7 @@ class BrowserLaunchOffice(SubversionLink):
 
     def get_draw_separator(self, req):
         return True
-    
+
     def get_content(self, req, entry, data):
         
         # Make sure that repository is a Subversion repository, since
@@ -58,19 +64,23 @@ class BrowserLaunchOffice(SubversionLink):
             path = self.get_subversion_path(entry)
             href = self.get_subversion_href(data, path)
 
-
             if re.search('(MSIE |Trident/)',
                          req.environ.get('HTTP_USER_AGENT', '')):
                 # for IE, we'll use ActiveX as this may work with older Office installations
                 return tag.a(tag.i(class_="fa fa-edit"),
-                             ' Edit with Microsoft Office',
+                             ' %s with Microsoft Office' % self._verb,
                              href=href,
-                             class_="officelaunchlink")
+                             class_=self._link_class)
             else:
                 # otherwise, let's try https://msdn.microsoft.com/en-us/library/office/dn906146.aspx
                 # which is Office 2010 SP2 and above
                 application = self.office_file_extensions[ext]
                 return tag.a(tag.i(class_="fa fa-edit"),
-                             ' Edit with Microsoft %s' % application.title(),
-                             href="ms-%s:ofe|u|%s" % (application, href))
+                             ' %s with Microsoft %s' % (self._verb, application.title()),
+                             href="ms-%s:%s|u|%s" % (application, self._href_mode, href))
 
+class BrowserLaunchOfficeForView(BrowserLaunchOfficeForEdit):
+    _link_class = "officelaunchlink-view"
+    _verb = "View"
+    # https://msdn.microsoft.com/en-us/library/office/dn906146.aspx
+    _href_mode = "ofv"
